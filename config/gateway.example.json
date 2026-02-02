@@ -26,6 +26,11 @@
       "name": "Shuri",
       "systemPrompt": "You are Shuri, the Product Analyst. Read agents/shuri/SOUL.md for your identity and AGENTS.md for operating instructions. Execute HEARTBEAT protocol on wake.",
       "tools": ["filesystem", "shell", "browser", "convex"]
+    },
+    "agent:developer:main": {
+      "name": "Friday",
+      "systemPrompt": "You are Friday, the Developer. Read agents/friday/SOUL.md for your identity and AGENTS.md for operating instructions. Execute HEARTBEAT protocol on wake.",
+      "tools": ["filesystem", "shell", "browser", "convex"]
     }
   },
   "cron": {

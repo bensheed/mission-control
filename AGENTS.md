@@ -190,5 +190,5 @@ Escalate to the human (via Jarvis) when:
 
 ## Version
 
-Last updated: Week 3 of implementation  
-Agents active: Jarvis (Squad Lead), Shuri (Product Analyst)
+Last updated: Week 4 of implementation  
+Agents active: Jarvis (Squad Lead), Shuri (Product Analyst), Friday (Developer)
