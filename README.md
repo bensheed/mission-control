@@ -95,38 +95,6 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
 
-### Documentation
-
-- [Implementation Plan](docs/PLAN.md) - 12-week build guide
-- [PRD](docs/PRD.md) - Full system specification
-- [Runbook](docs/RUNBOOK.md) - Operational procedures
-- [Original Article](docs/raw.md) - Source material by @pbteja1998
-
-## Project Structure
-
-```
-mission-control/
-├── agents/           # Agent SOUL.md personality files
-├── convex/           # Database schema and functions
-├── dashboard/        # React dashboard (Next.js 14)
-├── docs/             # PRD, runbook, original article
-├── memory/           # Working memory, daily notes, standups
-├── scripts/          # Setup and utility scripts
-├── services/         # Notification daemon, standup generator
-└── config/           # Configuration files
-```
-
-## Status
-
-✅ **Complete** - All 12 weeks of implementation finished
-
-- 10 AI agents with unique personalities
-- Convex real-time database
-- @mention notification system
-- Subscription preferences & alert routing
-- Daily standup generation
-- React dashboard with task board
-
 ## License
 
 MIT
