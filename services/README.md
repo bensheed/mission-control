@@ -6,7 +6,7 @@ Background services that power Mission Control.
 
 ### notification-daemon.js
 
-Polls Convex for undelivered notifications and sends them to agents via Clawdbot session messaging.
+Polls Convex for undelivered notifications and sends them to agents via [OpenClaw](https://github.com/openclaw/openclaw) session messaging.
 
 **Features:**
 - Polls every 2 seconds for new notifications
@@ -91,7 +91,7 @@ pm2 monit
 
 **Notifications not delivering:**
 1. Check CONVEX_URL is correct
-2. Verify Clawdbot gateway is running
+2. Verify OpenClaw gateway is running: `openclaw gateway status`
 3. Check agent session keys match configuration
 4. Review daemon logs for errors
 

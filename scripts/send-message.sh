@@ -1,6 +1,6 @@
 #!/bin/bash
 # send-message.sh
-# Send a message to another agent's session
+# Send a message to another agent's session via OpenClaw
 # Usage: ./send-message.sh <session-key> "<message>"
 # Example: ./send-message.sh agent:developer:main "Friday, can you review this code?"
 
@@ -32,7 +32,7 @@ echo "Sending message to session: $SESSION_KEY"
 echo "Message: $MESSAGE"
 echo ""
 
-clawdbot sessions send --session "$SESSION_KEY" --message "$MESSAGE"
+openclaw send --session "$SESSION_KEY" "$MESSAGE"
 
 echo ""
 echo "✓ Message sent"

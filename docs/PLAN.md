@@ -45,18 +45,18 @@ Before starting, ensure you have:
 mkdir -p mission-control/{agents/jarvis,memory,scripts,config,output}
 cd mission-control
 
-# Install OpenClaw/Clawdbot
+# Install OpenClaw
 npm init -y
-npm install clawdbot
+npm install openclaw
 
 # Initialize
-npx clawdbot init
+npx openclaw init
 ```
 
 - [ ] Set up project directory structure (see [PRD Section 6.2](docs/PRD.md#62-file-structure))
-- [ ] Install and configure Clawdbot/OpenClaw
+- [ ] Install and configure OpenClaw
 - [ ] Add Anthropic API key to config
-- [ ] Verify gateway starts: `clawdbot gateway start`
+- [ ] Verify gateway starts: `openclaw gateway start`
 
 #### Day 3-4: Telegram Integration
 
@@ -191,7 +191,7 @@ Implement the heartbeat protocol from [PRD Section 7](docs/PRD.md#7-heartbeat-sy
 - [ ] Create `HEARTBEAT.md` protocol file
 - [ ] Set up first heartbeat cron for Shuri:
   ```bash
-  clawdbot cronadd \
+  openclaw cronadd \
     --name "shuri-heartbeat" \
     --cron "2,17,32,47 * * * *" \
     --session "isolated" \
@@ -213,7 +213,7 @@ Implement the heartbeat protocol from [PRD Section 7](docs/PRD.md#7-heartbeat-sy
 
 - [ ] Implement direct session messaging:
   ```bash
-  clawdbot sessions send --session "agent:developer:main" --message "Friday, can you help?"
+  openclaw sessions send --session "agent:developer:main" --message "Friday, can you help?"
   ```
 - [ ] Test Jarvis delegating to Shuri
 - [ ] Test Jarvis delegating to Friday
@@ -413,7 +413,7 @@ async function deliverNotifications() {
       const sessionKey = AGENT_SESSIONS[notification.agentName];
       
       try {
-        await clawdbot.sessions.send(sessionKey, notification.content);
+        await openclaw.sessions.send(sessionKey, notification.content);
         await convex.mutation("notifications:markDelivered", { id: notification._id });
       } catch (e) {
         // Agent asleep, will retry
@@ -634,13 +634,13 @@ The system is ready for production when:
 
 ```bash
 # Start gateway
-clawdbot gateway start
+openclaw gateway start
 
 # Add heartbeat cron
-clawdbot cronadd --name "agent-heartbeat" --cron "*/15 * * * *" --session "isolated" --message "Execute HEARTBEAT"
+openclaw cronadd --name "agent-heartbeat" --cron "*/15 * * * *" --session "isolated" --message "Execute HEARTBEAT"
 
 # Send message to agent
-clawdbot sessions send --session "agent:main:main" --message "Hello Jarvis"
+openclaw sessions send --session "agent:main:main" --message "Hello Jarvis"
 
 # Run Convex functions
 npx convex run tasks:create '{"title": "...", "description": "..."}'
@@ -673,7 +673,7 @@ agent:notion-agent:main      → Wong
 
 - [Product Requirements Document](docs/PRD.md) - Full system specification
 - [Original Article](docs/raw.md) - "The Complete Guide to Building Mission Control" by @pbteja1998
-- [OpenClaw/Clawdbot](https://github.com/openclaw) - Agent framework
+- [OpenClaw](https://github.com/openclaw) - Agent framework
 - [Convex Documentation](https://docs.convex.dev) - Database platform
 
 ---

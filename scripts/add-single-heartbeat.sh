@@ -1,6 +1,6 @@
 #!/bin/bash
 # add-single-heartbeat.sh
-# Adds a heartbeat cron for a single agent
+# Adds a heartbeat cron for a single agent via OpenClaw
 # Usage: ./add-single-heartbeat.sh <agent-name> <session-key> <minutes>
 # Example: ./add-single-heartbeat.sh shuri agent:product-analyst:main "2,17,32,47"
 
@@ -23,15 +23,14 @@ echo "Adding heartbeat for $DISPLAY_NAME..."
 echo "  Session: $SESSION_KEY"
 echo "  Schedule: $MINUTES * * * *"
 
-clawdbot cronadd \
+openclaw cron add \
   --name "${AGENT_NAME}-heartbeat" \
-  --cron "${MINUTES} * * * *" \
-  --session "isolated" \
+  --schedule "${MINUTES} * * * *" \
   --session-key "$SESSION_KEY" \
   --message "You are ${DISPLAY_NAME}. Execute HEARTBEAT protocol per HEARTBEAT.md. Read your SOUL.md at agents/${AGENT_NAME}/SOUL.md for your identity."
 
 echo ""
 echo "✓ Heartbeat configured for $DISPLAY_NAME"
 echo ""
-echo "To verify: clawdbot cronlist"
-echo "To remove: clawdbot cronremove --name ${AGENT_NAME}-heartbeat"
+echo "To verify: openclaw cron list"
+echo "To remove: openclaw cron remove ${AGENT_NAME}-heartbeat"

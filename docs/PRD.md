@@ -128,7 +128,7 @@ A system where:
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | Gateway | Node.js daemon | Core process managing all sessions |
-| Sessions | OpenClaw/Clawdbot | Individual agent instances |
+| Sessions | OpenClaw | Individual agent instances |
 | Database | Convex | Real-time task/message storage |
 | File Storage | Local filesystem | Memory files, configs, deliverables |
 | AI Provider | Anthropic Claude | LLM for agent intelligence |
@@ -473,7 +473,7 @@ while (true) {
     const sessionKey = AGENT_SESSIONS[notification.mentionedAgentId];
     
     try {
-      await clawdbot.sessions.send(sessionKey, notification.content);
+      await openclaw.sessions.send(sessionKey, notification.content);
       await markDelivered(notification.id);
     } catch (e) {
       // Agent asleep, notification stays queued
@@ -677,7 +677,7 @@ interface Task {
 ```json
 {
   "dependencies": {
-    "clawdbot": "latest",
+    "openclaw": "latest",
     "convex": "latest",
     "telegraf": "^4.x",
     "pm2": "^5.x",
@@ -789,7 +789,7 @@ export default defineSchema({
 
 | Task | Description | Priority |
 |------|-------------|----------|
-| Gateway Setup | Install and configure OpenClaw/Clawdbot | P0 |
+| Gateway Setup | Install and configure OpenClaw | P0 |
 | Single Agent | Get Jarvis running with Telegram | P0 |
 | Basic Memory | Implement WORKING.md protocol | P0 |
 | File Structure | Set up workspace directories | P0 |
@@ -980,7 +980,7 @@ AGENTS=(
 for agent_config in "${AGENTS[@]}"; do
   IFS=':' read -r agent minutes <<< "$agent_config"
   
-  clawdbot cronadd \
+  openclaw cronadd \
     --name "${agent}-heartbeat" \
     --cron "${minutes} * * * *" \
     --session "isolated" \
@@ -1017,7 +1017,7 @@ done
 
 - **Original Article**: [The Complete Guide to Building Mission Control](raw.md) - Full text preserved in this repository
 - **Implementation Plan**: [PLAN.md](../PLAN.md) - Step-by-step guide to build this system
-- **OpenClaw/Clawdbot**: The open-source agent framework this system is built on
+- **OpenClaw**: The open-source agent framework this system is built on
 - **Convex**: Real-time database platform for Mission Control
 
 ---
