@@ -152,8 +152,74 @@ export default defineSchema({
   subscriptions: defineTable({
     agentId: v.id("agents"),
     taskId: v.id("tasks"),
+    // Subscription preferences
+    notifyOnReply: v.optional(v.boolean()),      // Notify on thread replies (default: true)
+    notifyOnStatusChange: v.optional(v.boolean()), // Notify on task status changes (default: true)
+    mutedUntil: v.optional(v.number()),          // Unix timestamp - mute until this time
   })
     .index("by_agent", ["agentId"])
     .index("by_task", ["taskId"])
     .index("by_agent_task", ["agentId", "taskId"]),
+
+  /**
+   * Agent Preferences table - global notification preferences per agent
+   */
+  agentPreferences: defineTable({
+    agentId: v.id("agents"),
+    // Notification routing preferences
+    quietHoursStart: v.optional(v.number()),     // Hour (0-23) to start quiet hours
+    quietHoursEnd: v.optional(v.number()),       // Hour (0-23) to end quiet hours
+    // Alert priority thresholds
+    urgentOnly: v.optional(v.boolean()),         // Only notify for urgent tasks
+    minPriority: v.optional(v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("urgent")
+    )),
+    // Channel preferences
+    deliveryMethod: v.optional(v.union(
+      v.literal("immediate"),                    // Deliver as soon as possible
+      v.literal("batched"),                      // Batch notifications
+      v.literal("heartbeat_only")                // Only deliver during heartbeat
+    )),
+    batchIntervalMinutes: v.optional(v.number()), // For batched delivery
+    // Muting
+    globalMuteUntil: v.optional(v.number()),     // Unix timestamp - global mute
+    mutedTags: v.optional(v.array(v.string())),  // Don't notify for tasks with these tags
+  })
+    .index("by_agent", ["agentId"]),
+
+  /**
+   * Alert Rules table - custom routing rules for specific scenarios
+   */
+  alertRules: defineTable({
+    agentId: v.id("agents"),
+    name: v.string(),
+    enabled: v.boolean(),
+    // Matching conditions
+    conditions: v.object({
+      taskTags: v.optional(v.array(v.string())),      // Match tasks with these tags
+      taskPriority: v.optional(v.array(v.string())), // Match these priorities
+      sourceAgents: v.optional(v.array(v.id("agents"))), // Match from these agents
+      notificationType: v.optional(v.array(v.string())), // Match notification types
+    }),
+    // Actions
+    action: v.union(
+      v.literal("allow"),           // Allow through (default)
+      v.literal("block"),           // Block notification
+      v.literal("escalate"),        // Mark as high priority
+      v.literal("redirect")         // Redirect to another agent
+    ),
+    redirectToAgentId: v.optional(v.id("agents")), // For redirect action
+    // Priority override
+    priorityOverride: v.optional(v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("urgent")
+    )),
+  })
+    .index("by_agent", ["agentId"])
+    .index("by_agent_enabled", ["agentId", "enabled"]),
 });

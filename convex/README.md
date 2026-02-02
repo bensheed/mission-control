@@ -20,6 +20,8 @@ This directory contains the Convex database schema and functions for Mission Con
 | `documents` | Deliverables and research artifacts |
 | `notifications` | @mention alerts for agents |
 | `subscriptions` | Thread subscription tracking |
+| `agentPreferences` | Global notification preferences per agent |
+| `alertRules` | Custom routing rules for notifications |
 
 ## Task Lifecycle
 
@@ -53,4 +55,44 @@ npx convex run tasks:update '{"id": "...", "status": "in_progress"}'
 - `activities.ts` - Activity feed functions
 - `documents.ts` - Document CRUD functions
 - `notifications.ts` - Notification functions
-- `subscriptions.ts` - Subscription functions
+- `subscriptions.ts` - Subscription functions with muting
+- `preferences.ts` - Agent notification preferences (quiet hours, muting)
+- `alertRules.ts` - Custom alert routing rules
+
+## Alert Routing System
+
+The notification daemon supports sophisticated routing:
+
+### Agent Preferences (`preferences.ts`)
+- **Quiet Hours**: Specify hours when notifications should be deferred
+- **Global Mute**: Temporarily silence all notifications for an agent
+- **Muted Tags**: Ignore notifications from tasks with certain tags
+- **Delivery Method**: `immediate`, `batched`, or `heartbeat_only`
+
+### Alert Rules (`alertRules.ts`)
+Custom rules that evaluate each notification:
+
+```typescript
+// Example: Block low-priority thread replies
+{
+  name: "Block low priority replies",
+  conditions: {
+    taskPriority: ["low"],
+    notificationType: ["thread_reply"]
+  },
+  action: "block"
+}
+
+// Example: Escalate urgent tasks
+{
+  name: "Escalate urgent",
+  conditions: { taskPriority: ["urgent"] },
+  action: "escalate"
+}
+```
+
+Actions:
+- `allow` - Deliver normally
+- `block` - Don't deliver, mark as delivered
+- `escalate` - Add 🚨 URGENT prefix
+- `redirect` - Send to a different agent

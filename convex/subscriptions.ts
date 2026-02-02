@@ -16,7 +16,8 @@ export const listByAgent = query({
     return await Promise.all(
       subs.map(async (sub) => {
         const task = await ctx.db.get(sub.taskId);
-        return { ...sub, task };
+        const isMuted = sub.mutedUntil ? sub.mutedUntil > Date.now() : false;
+        return { ...sub, task, isMuted };
       })
     );
   },
@@ -70,6 +71,8 @@ export const subscribe = mutation({
   args: {
     agentId: v.id("agents"),
     taskId: v.id("tasks"),
+    notifyOnReply: v.optional(v.boolean()),
+    notifyOnStatusChange: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     // Check if already subscribed
@@ -87,6 +90,8 @@ export const subscribe = mutation({
     await ctx.db.insert("subscriptions", {
       agentId: args.agentId,
       taskId: args.taskId,
+      notifyOnReply: args.notifyOnReply ?? true,
+      notifyOnStatusChange: args.notifyOnStatusChange ?? true,
     });
 
     return { subscribed: true };
@@ -130,5 +135,117 @@ export const countByTask = query({
       .collect();
     
     return subs.length;
+  },
+});
+
+/**
+ * Update subscription preferences
+ */
+export const updatePreferences = mutation({
+  args: {
+    agentId: v.id("agents"),
+    taskId: v.id("tasks"),
+    notifyOnReply: v.optional(v.boolean()),
+    notifyOnStatusChange: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const sub = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_agent_task", (q) =>
+        q.eq("agentId", args.agentId).eq("taskId", args.taskId)
+      )
+      .first();
+
+    if (!sub) {
+      throw new Error("Subscription not found");
+    }
+
+    const updates: Record<string, boolean> = {};
+    if (args.notifyOnReply !== undefined) {
+      updates.notifyOnReply = args.notifyOnReply;
+    }
+    if (args.notifyOnStatusChange !== undefined) {
+      updates.notifyOnStatusChange = args.notifyOnStatusChange;
+    }
+
+    await ctx.db.patch(sub._id, updates);
+    return { updated: true };
+  },
+});
+
+/**
+ * Mute a subscription temporarily
+ */
+export const mute = mutation({
+  args: {
+    agentId: v.id("agents"),
+    taskId: v.id("tasks"),
+    durationMinutes: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const sub = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_agent_task", (q) =>
+        q.eq("agentId", args.agentId).eq("taskId", args.taskId)
+      )
+      .first();
+
+    if (!sub) {
+      throw new Error("Subscription not found");
+    }
+
+    const mutedUntil = Date.now() + args.durationMinutes * 60 * 1000;
+    await ctx.db.patch(sub._id, { mutedUntil });
+    return { mutedUntil };
+  },
+});
+
+/**
+ * Unmute a subscription
+ */
+export const unmute = mutation({
+  args: {
+    agentId: v.id("agents"),
+    taskId: v.id("tasks"),
+  },
+  handler: async (ctx, args) => {
+    const sub = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_agent_task", (q) =>
+        q.eq("agentId", args.agentId).eq("taskId", args.taskId)
+      )
+      .first();
+
+    if (!sub) {
+      throw new Error("Subscription not found");
+    }
+
+    await ctx.db.patch(sub._id, { mutedUntil: undefined });
+    return { unmuted: true };
+  },
+});
+
+/**
+ * Get active (non-muted) subscribers for a task
+ */
+export const getActiveSubscribers = query({
+  args: { taskId: v.id("tasks") },
+  handler: async (ctx, args) => {
+    const subs = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
+      .collect();
+
+    const now = Date.now();
+    const activeSubs = subs.filter(
+      (sub) => !sub.mutedUntil || sub.mutedUntil <= now
+    );
+
+    return await Promise.all(
+      activeSubs.map(async (sub) => {
+        const agent = await ctx.db.get(sub.agentId);
+        return { ...sub, agent };
+      })
+    );
   },
 });

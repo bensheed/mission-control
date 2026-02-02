@@ -4,6 +4,12 @@
  * Polls Convex for undelivered notifications and sends them to agents
  * via the Clawdbot session messaging API.
  * 
+ * Features:
+ * - Alert routing based on agent preferences
+ * - Quiet hours support
+ * - Muting support (global and per-subscription)
+ * - Alert rules evaluation
+ * 
  * Run with: node services/notification-daemon.js
  * Or via PM2: pm2 start services/notification-daemon.js --name notification-daemon
  */
@@ -37,6 +43,8 @@ let stats = {
   started: new Date().toISOString(),
   pollCount: 0,
   delivered: 0,
+  blocked: 0,
+  deferred: 0,
   failed: 0,
   lastPoll: null,
 };
@@ -77,18 +85,107 @@ async function sendToAgent(sessionKey, content) {
 }
 
 /**
+ * Check if notification should be delivered based on preferences and rules
+ */
+async function shouldDeliverNotification(notification, agent) {
+  try {
+    // Check agent preferences (quiet hours, global mute)
+    const deliveryCheck = await convex.query("preferences:shouldDeliver", {
+      agentId: agent._id,
+    });
+
+    if (!deliveryCheck.shouldDeliver) {
+      console.log(`[DEFER] ${agent.name}: ${deliveryCheck.reason}`);
+      return { deliver: false, reason: deliveryCheck.reason, action: "defer" };
+    }
+
+    // Evaluate alert rules
+    const ruleResult = await convex.query("alertRules:evaluate", {
+      agentId: agent._id,
+      sourceAgentId: notification.sourceAgentId,
+      taskId: notification.taskId,
+      notificationType: notification.type,
+    });
+
+    if (ruleResult.action === "block") {
+      console.log(`[BLOCK] ${agent.name}: Rule "${ruleResult.matchedRule}"`);
+      return { deliver: false, reason: ruleResult.matchedRule, action: "block" };
+    }
+
+    if (ruleResult.action === "redirect" && ruleResult.redirectTo) {
+      console.log(`[REDIRECT] ${agent.name} -> ${ruleResult.redirectTo}`);
+      return { 
+        deliver: true, 
+        action: "redirect", 
+        redirectTo: ruleResult.redirectTo,
+        priorityOverride: ruleResult.priorityOverride,
+      };
+    }
+
+    return { 
+      deliver: true, 
+      action: ruleResult.action,
+      priorityOverride: ruleResult.priorityOverride,
+    };
+  } catch (error) {
+    // If preference/rule check fails, default to delivering
+    console.warn(`[WARN] Preference check failed: ${error.message}, delivering anyway`);
+    return { deliver: true, action: "allow" };
+  }
+}
+
+/**
  * Process a single notification
  */
-async function processNotification(notification, agentName) {
+async function processNotification(notification, agent) {
+  const agentName = agent.name;
   const sessionKey = AGENT_SESSIONS[agentName];
   
   if (!sessionKey) {
     console.error(`[ERROR] Unknown agent: ${agentName}`);
     return false;
   }
+
+  // Check delivery preferences and rules
+  const decision = await shouldDeliverNotification(notification, agent);
+
+  if (!decision.deliver) {
+    if (decision.action === "block") {
+      // Permanently block - mark as delivered but don't send
+      await convex.mutation("notifications:markDelivered", {
+        id: notification._id,
+      });
+      stats.blocked++;
+      return true; // Remove from queue
+    } else {
+      // Defer - leave in queue for later
+      stats.deferred++;
+      return false;
+    }
+  }
+
+  // Handle redirects
+  let targetSessionKey = sessionKey;
+  let targetAgentName = agentName;
+  
+  if (decision.action === "redirect" && decision.redirectTo) {
+    // Find redirect target
+    const redirectAgent = await convex.query("agents:get", { id: decision.redirectTo });
+    if (redirectAgent) {
+      targetSessionKey = AGENT_SESSIONS[redirectAgent.name] || sessionKey;
+      targetAgentName = redirectAgent.name;
+      console.log(`[REDIRECT] Sending to ${targetAgentName} instead of ${agentName}`);
+    }
+  }
+
+  // Modify content for escalation
+  let content = notification.content;
+  if (decision.action === "escalate" || decision.priorityOverride === "urgent") {
+    content = `🚨 URGENT: ${content}`;
+  }
   
   try {
-    const result = await sendToAgent(sessionKey, notification.content);
+    const result = await sendToAgent(targetSessionKey, content);
     
     if (result.delivered) {
       // Mark as delivered in Convex
@@ -99,6 +196,7 @@ async function processNotification(notification, agentName) {
       return true;
     } else {
       // Agent sleeping - notification stays queued for next heartbeat
+      stats.deferred++;
       return false;
     }
   } catch (error) {
@@ -127,10 +225,10 @@ async function poll() {
     
     // Process each notification
     for (const notification of notifications) {
-      const agentName = notification.mentionedAgent?.name;
+      const agent = notification.mentionedAgent;
       
-      if (agentName) {
-        await processNotification(notification, agentName);
+      if (agent) {
+        await processNotification(notification, agent);
       }
     }
   } catch (error) {
