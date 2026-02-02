@@ -7,6 +7,8 @@ set -u
 echo "Setting up heartbeat crons for Mission Control agents..."
 
 # Agent configurations: name:session_key:minutes
+# Jarvis runs as main session, doesn't need heartbeat cron
+# All other agents wake on 15-minute intervals with staggered offsets
 AGENTS=(
   "pepper:agent:email-marketing:main:0,15,30,45"
   "shuri:agent:product-analyst:main:2,17,32,47"
@@ -18,6 +20,9 @@ AGENTS=(
   "quill:agent:social-media-manager:main:12,27,42,57"
   "wong:agent:notion-agent:main:14,29,44,59"
 )
+
+# Total agents in the squad
+TOTAL_AGENTS=10  # 9 heartbeat agents + Jarvis (main session)
 
 for agent_config in "${AGENTS[@]}"; do
   IFS=':' read -r name session_key minutes <<< "$agent_config"

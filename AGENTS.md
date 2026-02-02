@@ -188,7 +188,24 @@ Escalate to the human (via Jarvis) when:
 
 ---
 
+## The Squad
+
+| Agent | Role | Session Key | Heartbeat |
+|-------|------|-------------|-----------|
+| **Jarvis** | Squad Lead | `agent:main:main` | Main session (always on) |
+| **Shuri** | Product Analyst | `agent:product-analyst:main` | :02, :17, :32, :47 |
+| **Friday** | Developer | `agent:developer:main` | :04, :19, :34, :49 |
+| **Fury** | Customer Researcher | `agent:customer-researcher:main` | :10, :25, :40, :55 |
+| **Vision** | SEO Analyst | `agent:seo-analyst:main` | :08, :23, :38, :53 |
+| **Loki** | Content Writer | `agent:content-writer:main` | :06, :21, :36, :51 |
+| **Quill** | Social Media Manager | `agent:social-media-manager:main` | :12, :27, :42, :57 |
+| **Wanda** | Designer | `agent:designer:main` | :07, :22, :37, :52 |
+| **Pepper** | Email Marketing | `agent:email-marketing:main` | :00, :15, :30, :45 |
+| **Wong** | Knowledge Manager | `agent:notion-agent:main` | :14, :29, :44, :59 |
+
+---
+
 ## Version
 
-Last updated: Week 4 of implementation  
-Agents active: Jarvis (Squad Lead), Shuri (Product Analyst), Friday (Developer)
+Last updated: Week 11 of implementation  
+Agents active: All 10 agents operational
