@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cream: #FEFCF3;
+  --sand: #F5F0E8;
+  --terracotta: #C1666B;
+  --forest: #4A7C59;
+  --slate: #36454F;
+  --ink: #1A1A2E;
+}
+
+body {
+  background-color: var(--cream);
+  color: var(--ink);
+}
+
+/* Warm, editorial scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sand);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--slate);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink);
+}
+
+/* Kanban column styling */
+.kanban-column {
+  @apply bg-sand rounded-lg p-4 min-h-[400px];
+}
+
+.kanban-card {
+  @apply bg-white rounded-md p-3 shadow-sm border border-sand/50 mb-2 cursor-pointer;
+  @apply hover:shadow-md transition-shadow duration-200;
+}
+
+/* Status badges */
+.badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-inbox { @apply bg-gray-100 text-gray-800; }
+.badge-assigned { @apply bg-blue-100 text-blue-800; }
+.badge-in_progress { @apply bg-yellow-100 text-yellow-800; }
+.badge-review { @apply bg-purple-100 text-purple-800; }
+.badge-done { @apply bg-green-100 text-green-800; }
+.badge-blocked { @apply bg-red-100 text-red-800; }
+
+/* Priority indicators */
+.priority-low { @apply border-l-2 border-gray-300; }
+.priority-medium { @apply border-l-2 border-blue-400; }
+.priority-high { @apply border-l-2 border-orange-400; }
+.priority-urgent { @apply border-l-2 border-red-500; }
