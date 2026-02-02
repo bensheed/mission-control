@@ -2,12 +2,16 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Doc } from "../../convex/_generated/dataModel";
 import { AgentCard } from "./AgentCard";
 import { Users } from "lucide-react";
 
+type Agent = Doc<"agents">;
+type Task = Doc<"tasks">;
+
 export function AgentGrid() {
-  const agents = useQuery(api.agents.list, {});
-  const tasks = useQuery(api.tasks.list, {});
+  const agents = useQuery(api.agents.list, {}) as Agent[] | undefined;
+  const tasks = useQuery(api.tasks.list, {}) as Task[] | undefined;
 
   if (agents === undefined || tasks === undefined) {
     return (

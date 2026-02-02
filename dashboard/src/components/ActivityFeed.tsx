@@ -34,6 +34,14 @@ const activityColors: Record<string, string> = {
   agent_heartbeat: "text-gray-400 bg-gray-50",
 };
 
+interface Activity {
+  _id: string;
+  type: string;
+  message: string;
+  _creationTime: number;
+  agent?: { name: string };
+}
+
 interface ActivityFeedProps {
   limit?: number;
   showHeartbeats?: boolean;
@@ -63,7 +71,7 @@ export function ActivityFeed({ limit = 20, showHeartbeats = false }: ActivityFee
   // Filter out heartbeats if not showing them
   const filteredActivities = showHeartbeats
     ? activities
-    : activities.filter((a) => a.type !== "agent_heartbeat");
+    : (activities as Activity[]).filter((a) => a.type !== "agent_heartbeat");
 
   const displayActivities = filteredActivities.slice(0, limit);
 
@@ -81,7 +89,7 @@ export function ActivityFeed({ limit = 20, showHeartbeats = false }: ActivityFee
             <p className="text-sm">No activity yet</p>
           </div>
         ) : (
-          displayActivities.map((activity) => {
+          (displayActivities as Activity[]).map((activity) => {
             const Icon = activityIcons[activity.type] || Activity;
             const colorClass = activityColors[activity.type] || "text-slate bg-sand";
 
