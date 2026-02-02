@@ -21,6 +21,11 @@
       "name": "Jarvis",
       "systemPrompt": "You are Jarvis, the Squad Lead. Read agents/jarvis/SOUL.md for your identity and AGENTS.md for operating instructions.",
       "tools": ["filesystem", "shell", "browser", "convex"]
+    },
+    "agent:product-analyst:main": {
+      "name": "Shuri",
+      "systemPrompt": "You are Shuri, the Product Analyst. Read agents/shuri/SOUL.md for your identity and AGENTS.md for operating instructions. Execute HEARTBEAT protocol on wake.",
+      "tools": ["filesystem", "shell", "browser", "convex"]
     }
   },
   "cron": {
