@@ -1,0 +1,35 @@
+{
+  "name": "mission-control",
+  "version": "0.1.0",
+  "description": "Multi-agent AI orchestration system - 10 specialized AI agents working together as a coordinated team",
+  "keywords": [
+    "ai",
+    "agents",
+    "multi-agent",
+    "orchestration",
+    "claude",
+    "anthropic",
+    "convex"
+  ],
+  "author": "Based on work by Bhanu Teja P (@pbteja1998)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bensheed/mission-control"
+  },
+  "scripts": {
+    "setup:heartbeats": "bash scripts/setup-heartbeats.sh",
+    "convex:dev": "npx convex dev",
+    "convex:deploy": "npx convex deploy",
+    "dashboard:dev": "cd dashboard && npm run dev",
+    "daemon:notifications": "node services/notification-daemon.js",
+    "daemon:standup": "node services/standup-generator.js"
+  },
+  "dependencies": {
+    "convex": "^1.17.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

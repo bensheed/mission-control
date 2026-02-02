@@ -1,0 +1,30 @@
+{
+  "provider": {
+    "type": "anthropic",
+    "model": "claude-sonnet-4-20250514",
+    "apiKey": "${ANTHROPIC_API_KEY}"
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "token": "${TELEGRAM_BOT_TOKEN}",
+      "allowedUsers": ["YOUR_TELEGRAM_USER_ID"]
+    }
+  },
+  "workspace": "/path/to/mission-control",
+  "sessions": {
+    "default": {
+      "systemPrompt": "You are an AI agent in Mission Control. Read AGENTS.md for operating instructions and your SOUL.md for your identity.",
+      "tools": ["filesystem", "shell", "browser"]
+    },
+    "agent:main:main": {
+      "name": "Jarvis",
+      "systemPrompt": "You are Jarvis, the Squad Lead. Read agents/jarvis/SOUL.md for your identity and AGENTS.md for operating instructions.",
+      "tools": ["filesystem", "shell", "browser", "convex"]
+    }
+  },
+  "cron": {
+    "enabled": true,
+    "timezone": "UTC"
+  }
+}
