@@ -4,6 +4,8 @@ A multi-agent AI orchestration system where 10 specialized AI agents work togeth
 
 > **Credit**: This project is based on ["The Complete Guide to Building Mission Control"](https://x.com/pbteja1998/status/2017662163540971756) by [Bhanu Teja P (@pbteja1998)](https://x.com/pbteja1998). The original article is preserved in [docs/raw.md](docs/raw.md).
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/bensheed/mission-control)
+
 ## Overview
 
 Mission Control enables multiple AI agents to collaborate like a real team, with:
@@ -28,24 +30,6 @@ Mission Control enables multiple AI agents to collaborate like a real team, with
 | **Friday** | Developer | Code, scripts, implementation |
 | **Wong** | Documentation | Organizing docs, knowledge management |
 
-## Architecture
-
-```
-User (Telegram/Dashboard) 
-    ↓
-Gateway (Session Manager + Cron Scheduler)
-    ↓
-Agent Sessions (10 independent AI agents)
-    ↓
-Shared Infrastructure (Convex DB + File System + AI Provider)
-```
-
-## Documentation
-
-- [Implementation Plan](PLAN.md) - Step-by-step guide to build the system (start here!)
-- [Product Requirements Document (PRD)](docs/PRD.md) - Full system specification
-- [Original Article](docs/raw.md) - Source material by @pbteja1998
-
 ## Tech Stack
 
 - **Agent Framework**: OpenClaw/Clawdbot
@@ -60,32 +44,60 @@ Shared Infrastructure (Convex DB + File System + AI Provider)
 ### Prerequisites
 
 - Node.js v18+
-- Convex account
-- Anthropic API key
-- Telegram bot token (optional)
+- [Convex](https://convex.dev) account (free tier works)
 
-### Quick Start
+### Installation
 
 ```bash
-# Install dependencies
+# Clone the repository
+git clone https://github.com/bensheed/mission-control.git
+cd mission-control
+
+# Install root dependencies
 npm install
 
-# Initialize Convex
-npx convex dev
+# Install dashboard dependencies
+cd dashboard && npm install && cd ..
+```
 
-# Seed the database
+### Convex Setup
+
+```bash
+# Login to Convex (creates account if needed)
+npx convex login
+
+# Start Convex dev server (creates project on first run)
+npx convex dev
+```
+
+This will:
+1. Create a new Convex project
+2. Deploy the schema from `convex/schema.ts`
+3. Generate TypeScript types in `convex/_generated/`
+4. Output your deployment URL
+
+### Seed the Database
+
+```bash
+# Add all 10 agents to the database
 npx convex run seed:agents
 
-# Start the dashboard
-cd dashboard && npm run dev
-
-# Start notification daemon (in another terminal)
-pm2 start services/ecosystem.config.js
+# Create a sample task for testing
+npx convex run seed:sampleTask
 ```
+
+### Run the Dashboard
+
+```bash
+cd dashboard
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
 
 ### Documentation
 
-- [Implementation Plan](PLAN.md) - 12-week build guide
+- [Implementation Plan](docs/PLAN.md) - 12-week build guide
 - [PRD](docs/PRD.md) - Full system specification
 - [Runbook](docs/RUNBOOK.md) - Operational procedures
 - [Original Article](docs/raw.md) - Source material by @pbteja1998
