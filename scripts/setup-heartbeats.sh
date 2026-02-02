@@ -1,10 +1,19 @@
 #!/bin/bash
 # setup-heartbeats.sh
-# Sets up heartbeat cron jobs for all agents
+# Sets up heartbeat cron jobs for all agents using OpenClaw
 
 set -u
 
 echo "Setting up heartbeat crons for Mission Control agents..."
+echo ""
+
+# Check if openclaw is installed
+if ! command -v openclaw &> /dev/null; then
+  echo "Error: OpenClaw is not installed."
+  echo "Install with: npm install -g openclaw@latest"
+  echo "Then run: openclaw onboard"
+  exit 1
+fi
 
 # Agent configurations: name:session_key:minutes
 # Jarvis runs as main session, doesn't need heartbeat cron
@@ -21,9 +30,6 @@ AGENTS=(
   "wong:agent:notion-agent:main:14,29,44,59"
 )
 
-# Total agents in the squad
-TOTAL_AGENTS=10  # 9 heartbeat agents + Jarvis (main session)
-
 for agent_config in "${AGENTS[@]}"; do
   IFS=':' read -r name session_key minutes <<< "$agent_config"
   
@@ -32,10 +38,9 @@ for agent_config in "${AGENTS[@]}"; do
   
   echo "Adding heartbeat for $display_name ($session_key) at minutes: $minutes"
   
-  clawdbot cronadd \
+  openclaw cron add \
     --name "${name}-heartbeat" \
-    --cron "${minutes} * * * *" \
-    --session "isolated" \
+    --schedule "${minutes} * * * *" \
     --session-key "$session_key" \
     --message "You are ${display_name}. Execute HEARTBEAT protocol per HEARTBEAT.md. Read your SOUL.md at agents/${name}/SOUL.md for your identity."
 done
@@ -45,5 +50,7 @@ echo "✓ Heartbeat crons configured for ${#AGENTS[@]} agents"
 echo ""
 echo "Note: Jarvis (agent:main:main) runs as a main session and doesn't use heartbeats."
 echo ""
-echo "To list crons: clawdbot cronlist"
-echo "To remove a cron: clawdbot cronremove --name <name>"
+echo "Useful commands:"
+echo "  openclaw cron list              - List all cron jobs"
+echo "  openclaw cron remove <name>     - Remove a cron job"
+echo "  openclaw gateway status         - Check gateway status"

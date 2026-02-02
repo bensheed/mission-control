@@ -32,65 +32,84 @@ Mission Control enables multiple AI agents to collaborate like a real team, with
 
 ## Tech Stack
 
-- **Agent Framework**: OpenClaw/Clawdbot
-- **Database**: Convex (real-time)
-- **AI Provider**: Anthropic Claude
-- **Dashboard**: React + TypeScript
+- **Agent Runtime**: [OpenClaw](https://github.com/openclaw/openclaw) - The gateway that runs all agent sessions
+- **Database**: [Convex](https://convex.dev) (real-time sync)
+- **AI Provider**: Anthropic Claude (via OpenClaw)
+- **Dashboard**: Next.js + TypeScript
 - **Process Manager**: PM2
-- **Messaging**: Telegram Bot
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js v18+
+- Node.js v22+
+- [OpenClaw](https://github.com/openclaw/openclaw) installed and configured
 - [Convex](https://convex.dev) account (free tier works)
 
-### Installation
+### 1. Install OpenClaw
+
+OpenClaw is the agent runtime that powers Mission Control. Install it globally:
 
 ```bash
-# Clone the repository
+npm install -g openclaw@latest
+
+# Run the onboarding wizard
+openclaw onboard
+```
+
+The wizard will configure your gateway, workspace, and AI provider (Anthropic recommended).
+
+### 2. Clone This Repository
+
+```bash
 git clone https://github.com/bensheed/mission-control.git
 cd mission-control
 
-# Install root dependencies
 npm install
-
-# Install dashboard dependencies
 cd dashboard && npm install && cd ..
 ```
 
-### Convex Setup
+### 3. Configure OpenClaw Workspace
+
+Copy the agent SOUL files to your OpenClaw workspace:
 
 ```bash
-# Login to Convex (creates account if needed)
-npx convex login
+# Copy agent personalities to OpenClaw workspace
+cp -r agents/* ~/.openclaw/workspace/agents/
+```
 
-# Start Convex dev server (creates project on first run)
+### 4. Set Up Convex
+
+```bash
+npx convex login
 npx convex dev
 ```
 
-This will:
-1. Create a new Convex project
-2. Deploy the schema from `convex/schema.ts`
-3. Generate TypeScript types in `convex/_generated/`
-4. Output your deployment URL
-
-### Seed the Database
+### 5. Seed the Database
 
 ```bash
-# Add all 10 agents to the database
 npx convex run seed:agents
-
-# Create a sample task for testing
 npx convex run seed:sampleTask
 ```
 
-### Run the Dashboard
+### 6. Set Up Agent Heartbeats
 
 ```bash
-cd dashboard
-npm run dev
+# Configure cron jobs for all agents
+./scripts/setup-heartbeats.sh
+```
+
+### 7. Start Services
+
+```bash
+# Start the OpenClaw gateway (if not already running)
+openclaw gateway start
+
+# Start the notification daemon
+pm2 start services/ecosystem.config.js
+
+# Start the dashboard
+cd dashboard && npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the dashboard.

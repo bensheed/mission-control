@@ -2,7 +2,10 @@
  * Notification Daemon
  * 
  * Polls Convex for undelivered notifications and sends them to agents
- * via the Clawdbot session messaging API.
+ * via the OpenClaw sessions_send tool.
+ * 
+ * OpenClaw provides the sessions_send tool for inter-agent messaging:
+ * https://docs.openclaw.ai/concepts/session-tool
  * 
  * Features:
  * - Alert routing based on agent preferences
@@ -22,6 +25,7 @@ const POLL_INTERVAL_MS = 2000; // 2 seconds
 const MAX_RETRIES = 3;
 
 // Agent session keys mapping
+// These correspond to OpenClaw session keys configured in the gateway
 const AGENT_SESSIONS = {
   "Jarvis": "agent:main:main",
   "Shuri": "agent:product-analyst:main",
@@ -50,21 +54,20 @@ let stats = {
 };
 
 /**
- * Send a message to an agent session via Clawdbot
- * Replace this with actual Clawdbot SDK call when available
+ * Send a message to an agent session via OpenClaw CLI
+ * 
+ * OpenClaw's `openclaw send` command sends a message to a specific session.
+ * Docs: https://docs.openclaw.ai/tools/agent-send
  */
 async function sendToAgent(sessionKey, content) {
-  // This is a placeholder - replace with actual Clawdbot integration
-  // Example: await clawdbot.sessions.send(sessionKey, content)
-  
   console.log(`[SEND] To ${sessionKey}: ${content.substring(0, 100)}...`);
   
-  // Simulate the Clawdbot CLI command
   const { exec } = require("child_process");
   
   return new Promise((resolve, reject) => {
     const escapedContent = content.replace(/"/g, '\\"').replace(/\n/g, '\\n');
-    const cmd = `clawdbot sessions send --session "${sessionKey}" --message "${escapedContent}"`;
+    // Use openclaw send command to deliver message to agent session
+    const cmd = `openclaw send --session "${sessionKey}" "${escapedContent}"`;
     
     exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
       if (error) {

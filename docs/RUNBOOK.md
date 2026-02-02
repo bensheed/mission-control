@@ -2,23 +2,34 @@
 
 Operational procedures for running and maintaining Mission Control.
 
+Mission Control runs on [OpenClaw](https://github.com/openclaw/openclaw), an open-source AI agent framework. Each agent is an OpenClaw session with its own personality (SOUL.md), memory, and cron schedule.
+
 ---
 
 ## Quick Start
 
 ### Prerequisites
 
-1. Node.js v18+
-2. Convex account (free tier works)
-3. Anthropic API key
-4. Telegram bot token (optional, for notifications)
+1. Node.js v22+
+2. [OpenClaw](https://github.com/openclaw/openclaw) installed and configured
+3. Convex account (free tier works)
+4. Anthropic API key (configured via OpenClaw)
 
 ### Initial Setup
 
 ```bash
-# Clone and install
+# Install OpenClaw globally
+npm install -g openclaw@latest
+
+# Run the onboarding wizard (configures gateway, workspace, AI provider)
+openclaw onboard
+
+# Clone and install mission-control
 cd mission-control
 npm install
+
+# Copy agent SOUL files to OpenClaw workspace
+cp -r agents/* ~/.openclaw/workspace/agents/
 
 # Initialize Convex
 npx convex dev
@@ -28,12 +39,18 @@ npx convex run seed:agents
 
 # Create a sample task
 npx convex run seed:sampleTask
+
+# Set up agent heartbeat crons
+./scripts/setup-heartbeats.sh
 ```
 
 ### Start Services
 
 ```bash
-# Install PM2
+# Start the OpenClaw gateway
+openclaw gateway start
+
+# Install PM2 for process management
 npm install -g pm2
 
 # Start notification daemon
@@ -108,9 +125,8 @@ npx convex run tasks:updateStatus '{
 ### Send Message to Agent Session
 
 ```bash
-clawdbot sessions send \
-  --session "agent:main:main" \
-  --message "Hey Jarvis, can you check on task X?"
+# Using OpenClaw CLI to send a message to an agent session
+openclaw send --session "agent:main:main" "Hey Jarvis, can you check on task X?"
 ```
 
 ### Manually Trigger Standup
@@ -218,9 +234,9 @@ pm2 restart notification-daemon
 
 ### Agent Not Responding
 
-1. Check heartbeat log:
+1. Check heartbeat crons:
    ```bash
-   clawdbot cronlist | grep heartbeat
+   openclaw cron list | grep heartbeat
    ```
 
 2. Check agent status in Convex:
@@ -228,11 +244,15 @@ pm2 restart notification-daemon
    npx convex run agents:get '{"name": "AgentName"}'
    ```
 
-3. Manually wake agent:
+3. Check OpenClaw gateway status:
    ```bash
-   clawdbot sessions send \
-     --session "agent:session:key" \
-     --message "Wake up and execute HEARTBEAT protocol"
+   openclaw gateway status
+   openclaw doctor
+   ```
+
+4. Manually wake agent:
+   ```bash
+   openclaw send --session "agent:session:key" "Wake up and execute HEARTBEAT protocol"
    ```
 
 ### Tasks Stuck in Queue
@@ -313,8 +333,12 @@ Track costs by monitoring:
 # Stop all services
 pm2 stop all
 
-# Remove all heartbeat crons
-clawdbot cronremove --all
+# Stop the OpenClaw gateway
+openclaw gateway stop
+
+# Or remove all heartbeat crons individually
+openclaw cron list
+openclaw cron remove <cron-name>
 ```
 
 ### Disable Notifications
@@ -329,6 +353,7 @@ npx convex run seed:muteAll '{"durationMinutes": 1440}'
 ```bash
 # Stop services
 pm2 stop all
+openclaw gateway stop
 
 # Reset database
 npx convex run seed:reset
@@ -336,9 +361,55 @@ npx convex run seed:reset
 # Reseed
 npx convex run seed:agents
 
+# Re-setup heartbeat crons
+./scripts/setup-heartbeats.sh
+
 # Restart
+openclaw gateway start
 pm2 start services/ecosystem.config.js
 ```
+
+---
+
+## OpenClaw Reference
+
+### Key Commands
+
+| Command | Description |
+|---------|-------------|
+| `openclaw gateway start` | Start the gateway daemon |
+| `openclaw gateway stop` | Stop the gateway |
+| `openclaw gateway status` | Check gateway health |
+| `openclaw doctor` | Diagnose configuration issues |
+| `openclaw send --session <key> "message"` | Send message to agent |
+| `openclaw cron list` | List scheduled cron jobs |
+| `openclaw cron add` | Add a new cron job |
+| `openclaw cron remove <name>` | Remove a cron job |
+
+### Session Keys
+
+Each agent has a unique session key:
+
+| Agent | Session Key |
+|-------|-------------|
+| Jarvis | `agent:main:main` |
+| Shuri | `agent:product-analyst:main` |
+| Fury | `agent:customer-researcher:main` |
+| Vision | `agent:seo-analyst:main` |
+| Loki | `agent:content-writer:main` |
+| Quill | `agent:social-media-manager:main` |
+| Wanda | `agent:designer:main` |
+| Pepper | `agent:email-marketing:main` |
+| Friday | `agent:developer:main` |
+| Wong | `agent:notion-agent:main` |
+
+### Documentation
+
+- [OpenClaw Docs](https://docs.openclaw.ai)
+- [Getting Started](https://docs.openclaw.ai/start/getting-started)
+- [Gateway Configuration](https://docs.openclaw.ai/gateway/configuration)
+- [Session Tools](https://docs.openclaw.ai/concepts/session-tool)
+- [Cron Jobs](https://docs.openclaw.ai/automation/cron-jobs)
 
 ---
 
