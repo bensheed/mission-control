@@ -2,6 +2,8 @@
 
 A multi-agent AI orchestration system where 10 specialized AI agents work together as a coordinated team.
 
+> **Credit**: This project is based on ["The Complete Guide to Building Mission Control"](https://x.com/pbteja1998/status/2017662163540971756) by [Bhanu Teja P (@pbteja1998)](https://x.com/pbteja1998). The original article is preserved in [docs/raw.md](docs/raw.md).
+
 ## Overview
 
 Mission Control enables multiple AI agents to collaborate like a real team, with:
@@ -56,10 +58,6 @@ Shared Infrastructure (Convex DB + File System + AI Provider)
 ## Getting Started
 
 > 🚧 Implementation in progress. See the [PRD](docs/PRD.md) for the full roadmap.
-
-## Credits
-
-Based on ["The Complete Guide to Building Mission Control"](https://x.com/pbteja1998/status/2017662163540971756) by Bhanu Teja P (@pbteja1998).
 
 ## License
 
