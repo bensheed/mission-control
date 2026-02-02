@@ -6,6 +6,8 @@
 **Author:** Engineering Team  
 **Status:** Draft
 
+> **Source Material**: This PRD is based on ["The Complete Guide to Building Mission Control: How We Built an AI Agent Squad"](raw.md) by Bhanu Teja P (@pbteja1998). The full original article is preserved in [docs/raw.md](raw.md) for reference.
+
 ---
 
 ## Executive Summary
@@ -1008,6 +1010,15 @@ done
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | Jan 2025 | Engineering | Initial draft |
+
+---
+
+## References
+
+- **Original Article**: [The Complete Guide to Building Mission Control](raw.md) - Full text preserved in this repository
+- **Implementation Plan**: [PLAN.md](../PLAN.md) - Step-by-step guide to build this system
+- **OpenClaw/Clawdbot**: The open-source agent framework this system is built on
+- **Convex**: Real-time database platform for Mission Control
 
 ---
 

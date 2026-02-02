@@ -40,7 +40,9 @@ Shared Infrastructure (Convex DB + File System + AI Provider)
 
 ## Documentation
 
+- [Implementation Plan](PLAN.md) - Step-by-step guide to build the system (start here!)
 - [Product Requirements Document (PRD)](docs/PRD.md) - Full system specification
+- [Original Article](docs/raw.md) - Source material by @pbteja1998
 
 ## Tech Stack
 
