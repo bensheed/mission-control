@@ -159,3 +159,60 @@ export const cleanup = mutation({
     return { deleted };
   },
 });
+
+/**
+ * Increment retry count for a notification
+ */
+export const incrementRetry = mutation({
+  args: { id: v.id("notifications") },
+  handler: async (ctx, args) => {
+    const notification = await ctx.db.get(args.id);
+    if (!notification) return;
+
+    const currentRetryCount = notification.retryCount || 0;
+    await ctx.db.patch(args.id, {
+      retryCount: currentRetryCount + 1,
+    });
+
+    return { retryCount: currentRetryCount + 1 };
+  },
+});
+
+/**
+ * Mark a notification as failed (after max retries exceeded)
+ */
+export const markFailed = mutation({
+  args: { id: v.id("notifications") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      delivered: true, // Remove from undelivered queue
+      failedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mark a notification as escalated to Jarvis
+ */
+export const markEscalatedToJarvis = mutation({
+  args: { id: v.id("notifications") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      escalatedToJarvis: true,
+    });
+  },
+});
+
+/**
+ * Get Jarvis agent ID for escalation
+ */
+export const getJarvisAgent = query({
+  args: {},
+  handler: async (ctx) => {
+    const jarvis = await ctx.db
+      .query("agents")
+      .withIndex("by_session_key", (q) => q.eq("sessionKey", "agent:main:main"))
+      .first();
+    return jarvis;
+  },
+});

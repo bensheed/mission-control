@@ -50,40 +50,48 @@ let stats = {
   blocked: 0,
   deferred: 0,
   failed: 0,
+  escalated: 0,
   lastPoll: null,
 };
+
+// Jarvis agent ID (cached after first lookup)
+let jarvisAgentId = null;
 
 /**
  * Send a message to an agent session via OpenClaw CLI
  * 
  * OpenClaw's `openclaw send` command sends a message to a specific session.
  * Docs: https://docs.openclaw.ai/tools/agent-send
+ * 
+ * SECURITY: Uses execFile with argument array to prevent command injection.
+ * Content is passed directly as an argument without shell interpretation.
  */
 async function sendToAgent(sessionKey, content) {
   console.log(`[SEND] To ${sessionKey}: ${content.substring(0, 100)}...`);
   
-  const { exec } = require("child_process");
+  const { execFile } = require("child_process");
   
   return new Promise((resolve, reject) => {
-    const escapedContent = content.replace(/"/g, '\\"').replace(/\n/g, '\\n');
-    // Use openclaw send command to deliver message to agent session
-    const cmd = `openclaw send --session "${sessionKey}" "${escapedContent}"`;
-    
-    exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
-      if (error) {
-        // Check if it's a "session not active" error (expected when agent is sleeping)
-        if (stderr?.includes("not active") || stderr?.includes("not found")) {
-          console.log(`[INFO] Agent ${sessionKey} is sleeping, notification queued`);
-          resolve({ delivered: false, reason: "agent_sleeping" });
+    // Use execFile with argument array to prevent command injection
+    // Arguments are passed directly without shell interpretation
+    execFile("openclaw", ["send", "--session", sessionKey, content], 
+      { timeout: 30000 }, 
+      (error, stdout, stderr) => {
+        if (error) {
+          // Check if it's a "session not active" error (expected when agent is sleeping)
+          if (stderr?.includes("not active") || stderr?.includes("not found")) {
+            console.log(`[INFO] Agent ${sessionKey} is sleeping, notification queued`);
+            resolve({ delivered: false, reason: "agent_sleeping" });
+          } else {
+            console.error(`[ERROR] Failed to send to ${sessionKey}: ${error.message}`);
+            reject(error);
+          }
         } else {
-          console.error(`[ERROR] Failed to send to ${sessionKey}: ${error.message}`);
-          reject(error);
+          console.log(`[SUCCESS] Delivered to ${sessionKey}`);
+          resolve({ delivered: true });
         }
-      } else {
-        console.log(`[SUCCESS] Delivered to ${sessionKey}`);
-        resolve({ delivered: true });
       }
-    });
+    );
   });
 }
 
@@ -138,6 +146,60 @@ async function shouldDeliverNotification(notification, agent) {
 }
 
 /**
+ * Escalate a notification to Jarvis after max retries
+ */
+async function escalateToJarvis(notification, originalAgent) {
+  // Get Jarvis agent ID (cache it)
+  if (!jarvisAgentId) {
+    const jarvis = await convex.query("notifications:getJarvisAgent", {});
+    if (jarvis) {
+      jarvisAgentId = jarvis._id;
+    }
+  }
+
+  if (!jarvisAgentId) {
+    console.error("[ERROR] Cannot escalate - Jarvis agent not found");
+    return false;
+  }
+
+  const escalationContent = `🚨 ESCALATION: Failed to deliver notification to ${originalAgent.name} after ${MAX_RETRIES} attempts.\n\nOriginal notification:\n${notification.content}`;
+
+  try {
+    // Send to Jarvis
+    const result = await sendToAgent(AGENT_SESSIONS["Jarvis"], escalationContent);
+    
+    if (result.delivered) {
+      // Mark original notification as escalated
+      await convex.mutation("notifications:markEscalatedToJarvis", {
+        id: notification._id,
+      });
+      await convex.mutation("notifications:markFailed", {
+        id: notification._id,
+      });
+
+      // Log the escalation activity
+      await convex.mutation("activities:log", {
+        type: "notification_escalated",
+        message: `Notification to ${originalAgent.name} escalated to Jarvis after ${MAX_RETRIES} failed attempts`,
+        taskId: notification.taskId,
+        metadata: {
+          originalAgentId: originalAgent._id,
+          notificationId: notification._id,
+        },
+      });
+
+      stats.escalated++;
+      console.log(`[ESCALATE] Notification ${notification._id} escalated to Jarvis`);
+      return true;
+    }
+  } catch (error) {
+    console.error(`[ERROR] Failed to escalate to Jarvis:`, error.message);
+  }
+
+  return false;
+}
+
+/**
  * Process a single notification
  */
 async function processNotification(notification, agent) {
@@ -147,6 +209,13 @@ async function processNotification(notification, agent) {
   if (!sessionKey) {
     console.error(`[ERROR] Unknown agent: ${agentName}`);
     return false;
+  }
+
+  // Check if max retries exceeded - escalate to Jarvis
+  const retryCount = notification.retryCount || 0;
+  if (retryCount >= MAX_RETRIES) {
+    console.log(`[MAX_RETRIES] Notification ${notification._id} exceeded ${MAX_RETRIES} retries, escalating to Jarvis`);
+    return await escalateToJarvis(notification, agent);
   }
 
   // Check delivery preferences and rules
@@ -198,12 +267,19 @@ async function processNotification(notification, agent) {
       stats.delivered++;
       return true;
     } else {
-      // Agent sleeping - notification stays queued for next heartbeat
+      // Agent sleeping - increment retry count and leave in queue
+      await convex.mutation("notifications:incrementRetry", {
+        id: notification._id,
+      });
       stats.deferred++;
       return false;
     }
   } catch (error) {
     console.error(`[ERROR] Processing notification ${notification._id}:`, error.message);
+    // Increment retry count on error
+    await convex.mutation("notifications:incrementRetry", {
+      id: notification._id,
+    });
     stats.failed++;
     return false;
   }
@@ -270,6 +346,7 @@ async function main() {
   console.log("==============================================");
   console.log(`Convex URL: ${CONVEX_URL}`);
   console.log(`Poll interval: ${POLL_INTERVAL_MS}ms`);
+  console.log(`Max retries: ${MAX_RETRIES} (then escalate to Jarvis)`);
   console.log(`Agents configured: ${Object.keys(AGENT_SESSIONS).length}`);
   console.log("----------------------------------------------");
   console.log("Starting polling loop...\n");

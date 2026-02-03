@@ -118,6 +118,7 @@ export const create = mutation({
     ),
     tags: v.optional(v.array(v.string())),
     createdBy: v.string(),
+    createdByAgentId: v.optional(v.id("agents")), // Agent ID if created by an agent
     assigneeIds: v.optional(v.array(v.id("agents"))),
   },
   handler: async (ctx, args) => {
@@ -130,34 +131,44 @@ export const create = mutation({
       priority: args.priority || "medium",
       tags: args.tags || [],
       createdBy: args.createdBy,
+      createdByAgentId: args.createdByAgentId,
       assigneeIds: args.assigneeIds || [],
     });
 
     // Log activity
     await ctx.db.insert("activities", {
       type: "task_created",
-      agentId: args.assigneeIds?.[0], // First assignee, if any
+      agentId: args.createdByAgentId || args.assigneeIds?.[0],
       taskId,
       message: `Task created: ${args.title}`,
-    } as any);
+    });
 
     // Create notifications for assignees
     if (args.assigneeIds) {
       for (const agentId of args.assigneeIds) {
         await ctx.db.insert("notifications", {
           mentionedAgentId: agentId,
-          sourceAgentId: args.assigneeIds[0], // Will be overwritten properly
+          sourceAgentId: args.createdByAgentId, // Use creator's agent ID (can be undefined for human-created)
           taskId,
           content: `You've been assigned to: ${args.title}`,
           type: "assignment",
           delivered: false,
-        } as any);
-
-        // Auto-subscribe assignees to the task
-        await ctx.db.insert("subscriptions", {
-          agentId,
-          taskId,
         });
+
+        // Auto-subscribe assignees to the task (with duplicate check)
+        const existingSub = await ctx.db
+          .query("subscriptions")
+          .withIndex("by_agent_task", (q) => 
+            q.eq("agentId", agentId).eq("taskId", taskId)
+          )
+          .first();
+        
+        if (!existingSub) {
+          await ctx.db.insert("subscriptions", {
+            agentId,
+            taskId,
+          });
+        }
       }
     }
 
@@ -212,7 +223,7 @@ export const update = mutation({
         taskId: args.id,
         message: `Task "${task.title}" moved to ${args.status}`,
         metadata: { from: task.status, to: args.status },
-      } as any);
+      });
     }
 
     // Log other updates
@@ -222,7 +233,7 @@ export const update = mutation({
         agentId: args.agentId,
         taskId: args.id,
         message: `Task "${task.title}" updated`,
-      } as any);
+      });
     }
   },
 });

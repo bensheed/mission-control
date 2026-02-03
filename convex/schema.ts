@@ -55,7 +55,8 @@ export default defineSchema({
       v.literal("blocked")
     ),
     assigneeIds: v.array(v.id("agents")),
-    createdBy: v.string(),               // Human or agent name
+    createdBy: v.string(),               // Human or agent name (for display)
+    createdByAgentId: v.optional(v.id("agents")), // Agent ID if created by an agent
     priority: v.union(
       v.literal("low"),
       v.literal("medium"),
@@ -93,9 +94,10 @@ export default defineSchema({
       v.literal("message_sent"),
       v.literal("document_created"),
       v.literal("agent_status_changed"),
-      v.literal("agent_heartbeat")
+      v.literal("agent_heartbeat"),
+      v.literal("notification_escalated")  // For Jarvis escalation
     ),
-    agentId: v.id("agents"),
+    agentId: v.optional(v.id("agents")),  // Optional for system-generated activities
     taskId: v.optional(v.id("tasks")),
     documentId: v.optional(v.id("documents")),
     message: v.string(),                  // Human-readable description
@@ -130,7 +132,7 @@ export default defineSchema({
    */
   notifications: defineTable({
     mentionedAgentId: v.id("agents"),     // Who should receive this
-    sourceAgentId: v.id("agents"),        // Who triggered it
+    sourceAgentId: v.optional(v.id("agents")), // Who triggered it (optional for system notifications)
     taskId: v.optional(v.id("tasks")),    // Related task (if any)
     messageId: v.optional(v.id("messages")), // Related message (if any)
     content: v.string(),                  // The notification content
@@ -141,6 +143,10 @@ export default defineSchema({
     ),
     delivered: v.boolean(),
     deliveredAt: v.optional(v.number()),  // Unix timestamp when delivered
+    // Retry tracking
+    retryCount: v.optional(v.number()),   // Number of delivery attempts
+    failedAt: v.optional(v.number()),     // Unix timestamp when marked as failed
+    escalatedToJarvis: v.optional(v.boolean()), // Whether this was escalated
   })
     .index("by_mentioned_agent", ["mentionedAgentId"])
     .index("by_delivered", ["delivered"])

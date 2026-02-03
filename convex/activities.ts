@@ -81,7 +81,8 @@ export const log = mutation({
       v.literal("message_sent"),
       v.literal("document_created"),
       v.literal("agent_status_changed"),
-      v.literal("agent_heartbeat")
+      v.literal("agent_heartbeat"),
+      v.literal("notification_escalated")
     ),
     agentId: v.optional(v.id("agents")),
     taskId: v.optional(v.id("tasks")),
@@ -97,12 +98,17 @@ export const log = mutation({
       documentId: args.documentId,
       message: args.message,
       metadata: args.metadata,
-    } as any);
+    });
   },
 });
 
 /**
  * Get activity summary for today (for daily standup)
+ * 
+ * Performance optimizations:
+ * - Limits query to reasonable number of recent activities
+ * - Batch-fetches agents to avoid N+1 queries
+ * - Filters in memory only for today's activities
  */
 export const todaySummary = query({
   args: {},
@@ -110,10 +116,12 @@ export const todaySummary = query({
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
+    // Fetch recent activities with a reasonable limit
+    // Most systems won't have more than 1000 activities per day
     const activities = await ctx.db
       .query("activities")
       .order("desc")
-      .collect();
+      .take(1000);
 
     const todayActivities = activities.filter(
       (a) => a._creationTime >= startOfDay.getTime()
@@ -125,11 +133,27 @@ export const todaySummary = query({
       byType[activity.type] = (byType[activity.type] || 0) + 1;
     }
 
-    // Group by agent
+    // Batch-fetch all unique agents to avoid N+1 queries
+    const uniqueAgentIds = [...new Set(
+      todayActivities
+        .filter((a) => a.agentId !== undefined)
+        .map((a) => a.agentId!)
+    )];
+    
+    const agents = await Promise.all(
+      uniqueAgentIds.map((id) => ctx.db.get(id))
+    );
+    
+    // Create lookup map for O(1) agent access
+    const agentMap = new Map(
+      agents.filter(Boolean).map((agent) => [agent!._id, agent!])
+    );
+
+    // Group by agent using the lookup map (no additional DB calls)
     const byAgent: Record<string, number> = {};
     for (const activity of todayActivities) {
       if (activity.agentId) {
-        const agent = await ctx.db.get(activity.agentId);
+        const agent = agentMap.get(activity.agentId);
         if (agent) {
           byAgent[agent.name] = (byAgent[agent.name] || 0) + 1;
         }
